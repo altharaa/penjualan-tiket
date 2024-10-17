@@ -74,7 +74,7 @@ const AddItem = () => {
             phoneNumber,
             amount,
             productName,
-            status: 'pending',
+            transaction_status: 'pending',
             createdAt: new Date().toISOString(),
         };
 
