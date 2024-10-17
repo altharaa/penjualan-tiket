@@ -2,26 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+
+.container-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: #f9f9f9;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.selection {
+  background-color: #e0ffe0;
+  border: 1px solid #0f0;
+} 
+
+h2 {
+  font-size: 20px;
+  font-weight: 900;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+input {
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  outline-offset: 4px;
+}
+
+button {
+  background-color: black;
+  border-radius: 4px;
+  color: white;
+  padding: 10px 24px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  font-size: 16px;
+  outline-offset: 4px;
+}
+
+button:hover {
+  opacity: 0.8;
+}
+
+button[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
