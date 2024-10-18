@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { loadStripe } from "@stripe/stripe-js";
+import { doc, setDoc } from "firebase/firestore";  
+import db from "../utils/firestore";
 
 if(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
     throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is undefined");
@@ -29,6 +31,12 @@ const CheckoutConfirmation = () => {
             
             const data = await response.json();
             if (data.sessionId) {
+                await setDoc(doc(db, "payments", orderData.orderId), {
+                    ...orderData,
+                    payment_status: "unpaid", 
+                    createdAt: new Date()
+                });
+
                 const stripe = await stripePromise;
                 const result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
                 if (result.error) {
@@ -43,9 +51,6 @@ const CheckoutConfirmation = () => {
                 setLoading(false);
                 return;
             }
-
-            const stripe = await stripePromise;
-            await stripe.redirectToCheckout({ sessionId: data.sessionId });
         } catch (error) {
             console.error("Error in checkout:", error);
             setLoading(false);
@@ -74,12 +79,6 @@ const CheckoutConfirmation = () => {
             ) : (
                 <p className='text-center'>No order data found</p>
             )}
-             {/* <Element stripe={stripePromise} options={{ clientSecret }}>
-                <form>
-                    <button className='mt-10 btn btn-primary'>Checkout</button>
-                    <PaymentElement /> 
-                </form>
-            </Element> */}
         </main>
     );
 };

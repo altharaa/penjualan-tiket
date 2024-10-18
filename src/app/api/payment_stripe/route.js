@@ -17,6 +17,9 @@ export async function POST(request) {
         }
 
         const session = await stripe.checkout.sessions.create({
+            metadata: {
+                orderId: orderId,  
+              },
             line_items: [
                 {
                     price_data: {
@@ -30,8 +33,8 @@ export async function POST(request) {
                 },
             ],
             mode: "payment",
-            success_url: "https://4495-103-47-133-154.ngrok-free.app/#/success-payment",
-            cancel_url: "https://4495-103-47-133-154.ngrok-free.app/#/unfinished-payment",
+            success_url: `${process.env.BASE_URL}/#/success-payment?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.BASE_URL}/#/success-payment`,
         })
         console.log("Stripe session created:", session);
         return NextResponse.json({ sessionId: session.id });

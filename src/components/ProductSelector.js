@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { product } from "../libs/product"; 
-import AddItem from "./AddItem";
 
 const ProductSelector = () => {
     const navigate = useNavigate();
