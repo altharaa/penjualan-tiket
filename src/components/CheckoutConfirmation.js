@@ -1,83 +1,59 @@
-import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { loadStripe } from "@stripe/stripe-js";
+
+if(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
+    throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is undefined");
+}
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
 const CheckoutConfirmation = () => {
     const location = useLocation();
-    const { orderData, paymentToken } = location.state || {};
-    const [ paymentLink, setPaymentLink ] = useState("");
+    const { orderData } = location.state || {};
 
-    const handlePayment = () => {
-        window.snap.pay(paymentToken, {
-            onSuccess: async (result) => {
-                console.log('Payment success');                
-                try {
-                    const orderId = orderData.orderId; 
-                    const orderRef = doc(db, "orders", orderId);
-                    await updateDoc(orderRef, { transaction_status: "success" });
-                } catch (error) {
-                    console.error("Failed to update payment status:", error);
-                    alert("Error updating payment status.");
-                }
-            },
-            onPending: (result) => {
-                console.log('Payment pending', result);
-                alert('Payment pending');
-            },
-            onError: (result) => {
-                console.error('Payment error', result);
-                alert('Payment failed');
-            },
-        });
-    };
-
-    const generatePaymentLink = async () => {
-        const secret = process.env.NEXT_PUBLIC_SERVER_KEY;
-        const apiURL = process.env.NEXT_PUBLIC_API;
-
-        const encodedSecret = Buffer.from(secret).toString('base64');
-        const basicAuth = `Basic ${encodedSecret}`;
-
-        let data = {
-            item_detalis: [
-                {
-                    id: orderData.orderId,
-                    name: orderData.productName,
-                    price: orderData.amount,
-                }
-            ],
-            transaction_details: {
-                order_id: orderData.orderId,
-                gross_amount: orderData.amount,
-            },
-            customer_details: {
-                first_name: orderData.fullName,
-                email: orderData.email,
-                phone: orderData.phoneNumber,
-            }
-        };
+    const [loading, setLoading] = useState(false);
+    
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        setLoading(true);
 
         try {
-            const response = await fetch(`${apiURL}/v1/payment-links`, {
-                method: 'POST',
+            const response = await fetch("/api/payment_stripe", {
+                method: "POST",
                 headers: {
-                    "Accept": "application/json",
                     "Content-Type": "application/json",
-                    "Authorization": basicAuth
                 },
-                body: JSON.stringify(data),
+                body: JSON.stringify(orderData),
             });
+            
+            const data = await response.json();
+            if (data.sessionId) {
+                const stripe = await stripePromise;
+                const result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+                if (result.error) {
+                    console.error(result.error.message);
+                }
+            } else {
+                console.error("No sessionId returned from API");
+            }
+            
+            if (data.error) {
+                console.error("Payment initiation failed:", data.error);
+                setLoading(false);
+                return;
+            }
 
-            const paymentLink = await response.json();
-            console.log('Payment link:', paymentLink);
-            setPaymentLink(paymentLink.payment_url);
+            const stripe = await stripePromise;
+            await stripe.redirectToCheckout({ sessionId: data.sessionId });
         } catch (error) {
-            console.error('Error generating payment link:', error);
+            console.error("Error in checkout:", error);
+            setLoading(false);
         }
-    };
+    }
 
     return (
-        <div>
+         <main>
             <h2 className="m-10 text-center" >Checkout Confirmation</h2>
             {orderData ? (
                 <div className='m-10'>
@@ -86,33 +62,25 @@ const CheckoutConfirmation = () => {
                     <p>Name: {orderData.fullName}</p>
                     <p>Email: {orderData.email}</p>
                     <p>Phone: {orderData.phoneNumber}</p>
-                    <p>Amount: Rp {orderData.amount.toLocaleString()}</p>
-                    <button onClick={handlePayment} className="mt-10 btn btn-primary">
-                        Proceed with Payment
-                    </button>
-                    {!paymentLink ? (
-                        <p 
-                            className="mt-2 text-center text-indigo-500 py-4 text-sm font-medium transition hover:scale-105"
-                            onClick={generatePaymentLink}
-                        >
-                            Create Payment Link
-                        </p>
-                    ) : (
-                        <div className="flex justify-center items-center h-100">
-                            <Link
-                                className="text-indigo-500 py-4 text-sm font-medium transition hover:scale-105"
-                                href={paymentLink}
-                                // target="_blank"
-                            >
-                                Click Here To Pay
-                            </Link>
-                        </div>
-                    )}
+                    <p>Amount: $ {orderData.amount.toLocaleString()}</p>
+                    <button 
+                        onClick={handleSubmit} 
+                        className='mt-10 btn btn-primary'
+                        disabled={loading}
+                    >
+                        {loading ? "Processing..." : "Checkout"}
+                    </button>                
                 </div>
             ) : (
                 <p className='text-center'>No order data found</p>
             )}
-        </div>
+             {/* <Element stripe={stripePromise} options={{ clientSecret }}>
+                <form>
+                    <button className='mt-10 btn btn-primary'>Checkout</button>
+                    <PaymentElement /> 
+                </form>
+            </Element> */}
+        </main>
     );
 };
 

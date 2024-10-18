@@ -46,20 +46,11 @@ const ProductSelector = () => {
                 <label htmlFor={`product-${item.id}`}>
                     {item.name} 
                     <br/>
-                    Rp {item.price.toLocaleString()}
+                    $ {item.price.toLocaleString()}
                 </label>
             </div>
             ))}
         </form>
-
-        {/* {selectedProduct && (
-            <div className="selection mt-4 p-3 bg-success-subtle border border-success rounded">
-            <h3>Produk yang Dipilih:</h3>
-            <p>
-                {product.find((item) => item.id === parseInt(selectedProduct)).name}
-            </p>
-            </div>
-        )} */}
 
         <div className="text-center mt-4">
             <button

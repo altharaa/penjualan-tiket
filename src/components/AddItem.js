@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { collection, addDoc } from "firebase/firestore"; 
-import db from "../utils/firestore"; 
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const AddItem = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { amount, productName } = location.state;
 
     const [fullName, setFullName] = useState("");
@@ -28,36 +27,15 @@ const AddItem = () => {
                 orderId,
                 fullName,
                 email,
+                phoneNumber,
                 amount,
                 productName,
             };
 
-            const saveToFirebase = async (orderData) => {
-                try {
-                    const docRef = await addDoc(collection(db, "payments"), orderData);
-                    return docRef.id;
-                } catch (error) {
-                    throw new Error(`Firebase save failed: ${error.message}`);
-                }
-            };
-    
-            const response = await fetch('/api/payment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(orderData),
-            });
-    
-            const data = await response.json();
-            if (data.invoice_url) {
-                window.location.href = data.invoice_url;
-            } else {
-                throw new Error("Invoice creation failed");
-            }
+            navigate('/checkout', { state: { orderData } });
         } catch (error) {
             setError(error.message);
-            console.error("Transaction failed:", error);
+            console.error("Add Item failed:", error);
         } finally {
             setIsSubmitting(false);
         }
@@ -73,7 +51,7 @@ const AddItem = () => {
                         <p className="text-red-700">{error}</p>
                     </div>
                 )}
-                <label htmlFor="name">Full Name</label>
+                <label htmlFor="name">Customer Name</label>
                 <input
                     id="name"
                     type="text"
@@ -101,7 +79,7 @@ const AddItem = () => {
                     disabled={isSubmitting}
                 />
                 <button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Processing..." : "Checkout"}
+                    {isSubmitting ? "Processing..." : "Next"}
                 </button>
             </form>
         </>
